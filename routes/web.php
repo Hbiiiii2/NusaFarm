@@ -76,6 +76,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/gamification/complete-mission', [GamificationController::class, 'completeMission'])->name('gamification.complete-mission');
 });
 Route::post('/gamification/water-plant', function () {
+    /** @var \App\Models\User $user */
     $user = auth()->user();
     $cooldownMinutes = 5; // Cooldown time in minutes
     if ($user->last_watered_at && $user->last_watered_at->addMinutes($cooldownMinutes)->isFuture()) {
@@ -86,6 +87,31 @@ Route::post('/gamification/water-plant', function () {
     $user->update(['last_watered_at' => now()]);
     return back()->with('success', "Anda menyiram tanaman dan mendapatkan {$xpReward} XP!");
 })->name('gamification.water-plant');
+
+// Minigame: Collect Sunlight (cache-based cooldown, no DB schema needed)
+Route::post('/gamification/collect-sunlight', function () {
+    /** @var \App\Models\User $user */
+    $user = auth()->user();
+    if (!$user) {
+        return back()->with('error', 'Silakan login terlebih dahulu.');
+    }
+
+    $cooldownSeconds = 3 * 60; // 3 minutes cooldown
+    $cacheKey = 'user:' . $user->id . ':last_sunlight';
+    $lastCollected = \Illuminate\Support\Facades\Cache::get($cacheKey);
+
+    if ($lastCollected && now()->diffInSeconds($lastCollected) < $cooldownSeconds) {
+        return back()->with('error', 'Anda harus menunggu sebelum bisa mengumpulkan sinar lagi.');
+    }
+
+    $xpReward = 3;
+    $user->addXp($xpReward);
+
+    // Store last collected time; keep for a day to persist UX
+    \Illuminate\Support\Facades\Cache::put($cacheKey, now(), now()->addDay());
+
+    return back()->with('success', "Anda mengumpulkan sinar matahari dan mendapatkan {$xpReward} XP!");
+})->name('gamification.collect-sunlight');
 
 // Projects Routes
 Route::get('/projects', function (\Illuminate\Http\Request $request) {
@@ -190,12 +216,16 @@ Route::get('/projects/{farmland}', function (\App\Models\Farmland $farmland) {
 // Notifications Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/notifications', function () {
-        $notifications = auth()->user()->notifications()->latest()->paginate(20);
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $notifications = $user->notifications()->latest()->paginate(20);
         return view('notifications.index', compact('notifications'));
     })->name('notifications.index');
 
     Route::post('/notifications/mark-all-read', function () {
-        auth()->user()->notifications()->whereNull('read_at')->update(['read_at' => now()]);
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $user->notifications()->whereNull('read_at')->update(['read_at' => now()]);
         return back()->with('success', 'All notifications marked as read.');
     })->name('notifications.mark-all-read');
 

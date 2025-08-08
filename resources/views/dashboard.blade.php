@@ -9,7 +9,7 @@
             <div class="bg-gradient-to-r from-green-400 to-green-600 rounded-2xl shadow-lg p-4 md:p-6 text-white relative overflow-hidden">
                 <div class="flex items-center justify-between">
                     <div>
-                        <div class="text-base sm:text-lg font-semibold mb-1 line-clamp-1">Good morning, {{ auth()->user()->name }}! <i class="fas fa-user"></i></div>
+                        <div class="text-base sm:text-lg font-semibold mb-1 line-clamp-1"><span id="greeting-text">Halo</span>, {{ auth()->user()->name }}! <i class="fas fa-user"></i></div>
                         <div class="text-[11px] sm:text-xs opacity-80">Level {{ auth()->user()->level }} Investor <span class="ml-2 text-yellow-200 font-bold">#{{ auth()->user()->id }}</span></div>
                     </div>
                     <div class="flex flex-col items-center">
@@ -17,6 +17,20 @@
                         <span class="text-2xl sm:text-3xl font-extrabold leading-none">{{ auth()->user()->level }}</span>
                     </div>
                 </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        try {
+                            var hour = new Date().getHours();
+                            var greet = 'Halo';
+                            if (hour >= 5 && hour < 11) greet = 'Selamat pagi';
+                            else if (hour >= 11 && hour < 15) greet = 'Selamat siang';
+                            else if (hour >= 15 && hour < 18) greet = 'Selamat sore';
+                            else greet = 'Selamat malam';
+                            var el = document.getElementById('greeting-text');
+                            if (el) el.textContent = greet;
+                        } catch (e) {}
+                    });
+                </script>
                 <div class="mt-4">
                     @php
                         $currentLevelXp = (auth()->user()->level - 1) * 100;
@@ -199,6 +213,90 @@
                             drop.classList.remove('opacity-100');
                             drop.style.top = '8px';
                         }, 700);
+                    });
+                });
+            </script>
+
+            <!-- Minigame: Collect Sunlight -->
+            <div class="bg-yellow-50 rounded-xl shadow p-3 md:p-4 flex flex-col items-center mb-4">
+                <div class="flex items-center space-x-3 mb-1.5">
+                    <div id="sun-anim"
+                        class="w-14 h-14 md:w-16 md:h-16 bg-yellow-200 rounded-full flex items-center justify-center shadow relative overflow-hidden">
+                        <!-- Sun icon -->
+                        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 md:w-12 md:h-12">
+                            <circle cx="24" cy="24" r="10" fill="#FBBF24"></circle>
+                            <g stroke="#F59E0B" stroke-width="3" stroke-linecap="round">
+                                <line x1="24" y1="3" x2="24" y2="11" />
+                                <line x1="24" y1="37" x2="24" y2="45" />
+                                <line x1="3" y1="24" x2="11" y2="24" />
+                                <line x1="37" y1="24" x2="45" y2="24" />
+                                <line x1="8" y1="8" x2="13" y2="13" />
+                                <line x1="35" y1="35" x2="40" y2="40" />
+                                <line x1="8" y1="40" x2="13" y2="35" />
+                                <line x1="35" y1="13" x2="40" y2="8" />
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-yellow-700 text-sm md:text-base">Minigame: Kumpulkan Sinar</span>
+                        <span class="text-[11px] sm:text-xs text-gray-500">Ambil sinar matahari untuk +3 XP!</span>
+                    </div>
+                </div>
+                @php
+                    $cacheKey = 'user:' . auth()->id() . ':last_sunlight';
+                    $lastSun = \Illuminate\Support\Facades\Cache::get($cacheKey);
+                    $now = now();
+                    $sunCooldown = 3 * 60; // 3 menit
+                    $canCollectSun = !$lastSun || $now->diffInSeconds($lastSun) >= $sunCooldown;
+                    $sunWait = $canCollectSun ? 0 : $sunCooldown - $now->diffInSeconds($lastSun);
+                @endphp
+                <form method="POST" action="{{ route('gamification.collect-sunlight') }}" class="w-full flex flex-col items-center" id="sun-form">
+                    @csrf
+                    <button type="submit" id="sun-btn"
+                        class="w-full bg-yellow-500 text-white rounded-lg py-3 font-bold shadow-lg hover:bg-yellow-600 transition text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                        @if(!$canCollectSun) disabled @endif>
+                        <i class="fas fa-sun mr-2" id="sun-icon"></i>
+                        <span id="sun-btn-text">
+                            @if ($canCollectSun)
+                                Kumpulkan Sinar
+                            @else
+                                Tunggu (<span id="sun-cooldown">{{ gmdate('i:s', $sunWait) }}</span>)
+                            @endif
+                        </span>
+                    </button>
+                </form>
+                <div class="text-[11px] sm:text-xs text-gray-400 mt-2">Reward: <span class="text-yellow-700 font-bold">+3 XP</span> setiap 3 menit</div>
+            </div>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    var sunCan = @json($canCollectSun);
+                    var sunWait = @json($sunWait);
+                    if (!sunCan) {
+                        var t = sunWait;
+                        var el = document.getElementById('sun-cooldown');
+                        var btn = document.getElementById('sun-btn');
+                        var txt = document.getElementById('sun-btn-text');
+                        var iv = setInterval(function() {
+                            if (t > 0) {
+                                t--;
+                                var m = String(Math.floor(t / 60)).padStart(2, '0');
+                                var s = String(t % 60).padStart(2, '0');
+                                el.textContent = m + ':' + s;
+                            }
+                            if (t <= 0) {
+                                clearInterval(iv);
+                                btn.disabled = false;
+                                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                txt.textContent = 'Kumpulkan Sinar';
+                            }
+                        }, 1000);
+                    }
+                    // Simple pulse anim on click
+                    var sform = document.getElementById('sun-form');
+                    sform && sform.addEventListener('submit', function() {
+                        var sun = document.getElementById('sun-anim');
+                        sun.classList.add('scale-110');
+                        setTimeout(function(){ sun.classList.remove('scale-110'); }, 400);
                     });
                 });
             </script>
