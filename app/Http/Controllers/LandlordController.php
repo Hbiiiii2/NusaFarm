@@ -24,7 +24,7 @@ class LandlordController extends Controller
         $user = auth()->user();
         
         // Get landlord's farmlands
-        $farmlands = $user->farmlands()->with(['projects.investments'])->get();
+        $farmlands = $user->farmlands()->with(['projects', 'investments'])->get();
         
         // Get active projects on landlord's land
         $activeProjects = Project::whereHas('farmland', function($query) use ($user) {
@@ -123,7 +123,7 @@ class LandlordController extends Controller
             abort(403, 'Unauthorized access to farmland.');
         }
 
-        $farmland->load(['projects.investments', 'projects.manager']);
+        $farmland->load(['projects', 'investments', 'projects.manager']);
         
         // Get recent activity on this farmland
         $recentReports = DailyReport::whereHas('project', function($query) use ($farmland) {

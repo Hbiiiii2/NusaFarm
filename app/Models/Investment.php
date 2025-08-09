@@ -37,6 +37,14 @@ class Investment extends Model
     }
 
     /**
+     * Get the project this investment is for (through farmland).
+     */
+    public function project()
+    {
+        return $this->farmland->projects()->first();
+    }
+
+    /**
      * Calculate potential return based on farmland investment period.
      */
     public function getPotentialReturnAttribute()

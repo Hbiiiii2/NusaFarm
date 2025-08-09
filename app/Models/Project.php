@@ -43,11 +43,11 @@ class Project extends Model
     }
 
     /**
-     * Get the investments in this project.
+     * Get the investments in this project through farmland.
      */
     public function investments()
     {
-        return $this->hasMany(Investment::class);
+        return $this->farmland->investments();
     }
 
     /**
