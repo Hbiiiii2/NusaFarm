@@ -209,7 +209,7 @@ Route::get('/projects/{farmland}', function (\App\Models\Farmland $farmland) {
     if ($farmland->status !== 'ready_for_investment') {
         abort(404, 'Farmland not available for investment.');
     }
-    
+
     return view('projects.show', compact('farmland'));
 })->name('projects.show');
 
@@ -234,7 +234,7 @@ Route::middleware(['auth'])->group(function () {
         if ($notification->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
         }
-        
+
         $notification->update(['read_at' => now()]);
         return back()->with('success', 'Notification marked as read.');
     })->name('notifications.read');
