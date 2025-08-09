@@ -39,7 +39,7 @@
                 <label class="block text-xs font-bold text-gray-700 mb-2">Pilih Peran</label>
                 <div class="grid grid-cols-2 gap-3">
                     <label class="role-option border-2 border-gray-200 rounded-lg p-3 cursor-pointer hover:border-green-500 hover:shadow-md transition-all duration-200 flex flex-col items-center @if(old('role')=='user') border-green-500 bg-green-50 @endif">
-                        <input type="radio" name="role" value="user" class="sr-only" {{ old('role') == 'user' ? 'checked' : '' }}>
+                        <input type="radio" name="role" value="user" class="sr-only" {{ old('role','user') == 'user' ? 'checked' : '' }}>
                         <i class="fas fa-user-circle text-xl text-blue-600 mb-1"></i>
                         <span class="font-medium text-xs text-center">Investor</span>
                     </label>
@@ -72,11 +72,6 @@
                         <input type="radio" name="role" value="pedagang_pasar" class="sr-only" {{ old('role') == 'pedagang_pasar' ? 'checked' : '' }}>
                         <i class="fas fa-store text-xl text-red-600 mb-1"></i>
                         <span class="font-medium text-xs text-center">Pedagang Pasar</span>
-                    </label>
-                    <label class="role-option border-2 border-gray-200 rounded-lg p-3 cursor-pointer hover:border-green-500 hover:shadow-md transition-all duration-200 flex flex-col items-center @if(old('role')=='admin') border-green-500 bg-green-50 @endif">
-                        <input type="radio" name="role" value="admin" class="sr-only" {{ old('role') == 'admin' ? 'checked' : '' }}>
-                        <i class="fas fa-cog text-xl text-gray-600 mb-1"></i>
-                        <span class="font-medium text-xs text-center">Admin</span>
                     </label>
                 </div>
             </div>
